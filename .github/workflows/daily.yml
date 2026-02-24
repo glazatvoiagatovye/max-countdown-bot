@@ -1,0 +1,45 @@
+name: Daily Max Countdown
+
+on:
+  schedule:
+    # 01:00 МСК = 22:00 UTC
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Stop if finished
+        run: |
+          if [ -f DONE ]; then
+            echo "Countdown finished. Exiting."
+            exit 0
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python bot.py
+
+      - name: Commit DONE flag
+        if: hashFiles('DONE') != ''
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add DONE
+          git commit -m "Countdown finished"
+          git push
