@@ -1,7 +1,13 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import calendar
+import requests
+import os
 import sys
+
+# Токен и чат берём из Secrets GitHub
+TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 TARGET_DATE = datetime(2026, 7, 4, 1, 0, 0, tzinfo=MOSCOW_TZ)
@@ -53,22 +59,35 @@ def detailed_time_left():
     if days > 0:
         parts.append(pluralize(days, ["день", "дня", "дней"]))
 
-    # Часы, минуты, секунды всегда показываем
+    # Часы, минуты и секунды всегда показываем
     parts.append(pluralize(hours, ["час", "часа", "часов"]))
     parts.append(pluralize(minutes, ["минута", "минуты", "минут"]))
     parts.append(pluralize(seconds, ["секунда", "секунды", "секунд"]))
 
     return f"{total_days} {pluralize(total_days, ['день', 'дня', 'дней']).split()[1]}: [" + " / ".join(parts) + "]"
 
+def send_message(text):
+    # Временный вывод в лог GitHub Actions
+    print("Сообщение бота:", text)
+    
+    # Отправка в Telegram
+    if TOKEN and CHAT_ID:
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        response = requests.post(url, json={
+            "chat_id": CHAT_ID,
+            "text": text
+        })
+        response.raise_for_status()
+
 def main():
     detailed = detailed_time_left()
     if detailed is None:
-        print("МАКС ВЕРНУЛСЯ")
+        send_message("МАКС ВЕРНУЛСЯ")
         with open("DONE", "w") as f:
             f.write("finished")
         sys.exit(0)
     else:
-        print(f"До возвращения Макса {detailed}")
+        send_message(f"До возвращения Макса {detailed}")
 
 if __name__ == "__main__":
     print("=== Новый бот запущен ===")  # Для проверки в логах Actions
