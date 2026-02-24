@@ -1,12 +1,7 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import calendar
-import requests
-import os
 import sys
-
-TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
 
 MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 TARGET_DATE = datetime(2026, 7, 4, 1, 0, 0, tzinfo=MOSCOW_TZ)
@@ -27,7 +22,8 @@ def detailed_time_left():
     if now >= TARGET_DATE:
         return None
 
-    total_days = (TARGET_DATE - now).days  # общее количество дней
+    # Общее количество дней
+    total_days = (TARGET_DATE - now).days
 
     # Считаем месяцы
     months = (TARGET_DATE.year - now.year) * 12 + (TARGET_DATE.month - now.month)
@@ -39,6 +35,7 @@ def detailed_time_left():
         months -= 1
         temp_date -= timedelta(days=calendar.monthrange(temp_date.year, temp_date.month)[1])
 
+    # Остаток времени после месяцев
     remaining = TARGET_DATE - temp_date
     total_seconds = int(remaining.total_seconds())
 
@@ -55,30 +52,24 @@ def detailed_time_left():
         parts.append(pluralize(weeks, ["неделя", "недели", "недель"]))
     if days > 0:
         parts.append(pluralize(days, ["день", "дня", "дней"]))
-    # Часы, минуты, секунды всегда отображаем
+
+    # Часы, минуты, секунды всегда показываем
     parts.append(pluralize(hours, ["час", "часа", "часов"]))
     parts.append(pluralize(minutes, ["минута", "минуты", "минут"]))
     parts.append(pluralize(seconds, ["секунда", "секунды", "секунд"]))
 
     return f"{total_days} {pluralize(total_days, ['день', 'дня', 'дней']).split()[1]}: [" + " / ".join(parts) + "]"
 
-def send_message(text):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    response = requests.post(url, json={
-        "chat_id": CHAT_ID,
-        "text": text
-    })
-    response.raise_for_status()
-
 def main():
     detailed = detailed_time_left()
     if detailed is None:
-        send_message("МАКС ВЕРНУЛСЯ")
+        print("МАКС ВЕРНУЛСЯ")
         with open("DONE", "w") as f:
             f.write("finished")
         sys.exit(0)
     else:
-        send_message(f"До возвращения Макса {detailed}")
+        print(f"До возвращения Макса {detailed}")
 
 if __name__ == "__main__":
+    print("=== Новый бот запущен ===")  # Для проверки в логах Actions
     main()
